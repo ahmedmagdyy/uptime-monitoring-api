@@ -1,12 +1,18 @@
 const express = require('express')
+const routes = require('./routes')
+const dbConnect = require('./db/connect')
 
-const app = express()
 const port = process.env.PORT || 7000
+const app = express()
 
+app.use(express.json())
 app.get('/healthz', (req, res) => {
   res.status(200).send('Ok!')
 })
+app.use('/', routes)
 
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`)
+  console.log(`Server running on http://localhost:${port} ⚡⚡`)
 })
+
+dbConnect()
