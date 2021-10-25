@@ -1,24 +1,13 @@
 const nodemailer = require('nodemailer')
 
 async function sendMail ({ to, body }) {
-  // mail created by nodemailer for testing purposes
-  const account = {
-    user: 'hwlbxov4jx6i2ud2@ethereal.email',
-    pass: 'EPD3MHAzf2PcHrcys2',
-    smtp: { host: 'smtp.ethereal.email', port: 587, secure: false },
-    imap: { host: 'imap.ethereal.email', port: 993, secure: true },
-    pop3: { host: 'pop3.ethereal.email', port: 995, secure: true },
-    web: 'https://ethereal.email'
-  }
-
   const transporter = nodemailer.createTransport(
     {
-      host: process.env.MAIL_HOST || account.smtp.host,
-      port: process.env.MAIL_HOST_PORT || account.smtp.port,
-      secure: process.env.MAIL_HOST_SECURE || account.smtp.secure,
+      host: process.env.MAIL_HOST,
+      port: process.env.MAIL_HOST_PORT,
       auth: {
-        user: process.env.MAIL_USER || account.user,
-        pass: process.env.MAIL_PASS || account.pass
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
       },
       logger: true,
       transactionLog: true
@@ -47,20 +36,3 @@ async function sendMail ({ to, body }) {
 }
 
 module.exports = { sendMail }
-
-/**
- * {
-      host: process.env.MAIL_HOST,
-      port: process.env.MAIL_HOST_PORT,
-      secure: process.env.MAIL_HOST_SECURE,
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS
-      },
-      logger: true,
-      transactionLog: true
-    },
-    {
-      from: 'Nodemailer <example@nodemailer.com>'
-    }
- */
