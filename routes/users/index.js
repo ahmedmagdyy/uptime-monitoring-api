@@ -1,10 +1,13 @@
 const router = require('express').Router()
 const jwt = require('jsonwebtoken')
 
+const userModel = require('../../models/users')
 const validateSignupMiddleware = require('../../middlewares/signup')
 const { hashPassword } = require('../../helpers/encryptPassword')
+const { comparePassword } = require('../../helpers/comparePassword')
 const { usersModel } = require('../../models')
 const { sendMail } = require('../../mail')
+const { createAccessToken } = require('../../helpers/signAccessToken')
 
 router.post('/signup', validateSignupMiddleware, async (req, res) => {
   const { email, password } = req.body
@@ -63,6 +66,38 @@ router.get('/verify', async (req, res) => {
     const updateUser = await getUser.save()
 
     return res.status(200).json(updateUser)
+  } catch (error) {
+    console.log(error)
+    return res.status(400).json('Verification Failed!')
+  }
+})
+
+router.post('/signin', validateSignupMiddleware, async (req, res) => {
+  const { email, password } = req.body
+  try {
+    const findUser = await userModel.findOne({
+      email
+    })
+
+    if (!findUser) {
+      return res.status(404).json({ message: 'User Not Found!' })
+    }
+
+    const isCorrectPassword = await comparePassword({
+      hashedPass: findUser.password,
+      originalPass: password
+    })
+
+    if (!isCorrectPassword) {
+      return res.status(400).json({ message: 'Invalid Password!' })
+    }
+
+    const accessToken = createAccessToken({
+      id: findUser._id,
+      email: findUser.email
+    })
+
+    return res.status(200).json({ accessToken })
   } catch (error) {
     console.log(error)
     return res.status(400).json('Verification Failed!')

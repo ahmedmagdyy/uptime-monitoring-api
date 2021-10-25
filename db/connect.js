@@ -11,7 +11,6 @@ const {
 async function establishDatabaseConnection () {
   try {
     const mongoUrl = `mongodb://${MONGO_USER}:${MONGO_PASS}@${MONGO_HOST}:${MONGO_PORT}`
-    console.log({ mongoUrl })
     await mongoose.connect(mongoUrl, {
       dbName: MONGO_DB_NAME
     })
