@@ -1,0 +1,15 @@
+{
+  "javascript.validate.enable": false,
+  "standard.enable": true,
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "numso.prettier-standard-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "numso.prettier-standard-vscode"
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/.hg/store/**": true
+  }
+}
