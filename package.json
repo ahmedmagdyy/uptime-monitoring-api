@@ -9,9 +9,13 @@
   },
   "author": "Ahmed Magdy <ahmedmagdy2016@gmail.com>",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "env-cmd": "^10.1.0",
     "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.0.12",
-    "nodemon": "^2.0.14"
+    "nodemailer": "^6.7.0",
+    "nodemon": "^2.0.14",
+    "validator": "^13.6.0"
   }
 }
