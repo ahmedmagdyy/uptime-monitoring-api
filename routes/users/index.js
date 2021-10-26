@@ -1,7 +1,6 @@
 const router = require('express').Router()
 const jwt = require('jsonwebtoken')
 
-const userModel = require('../../models/users')
 const validateSignupMiddleware = require('../../middlewares/signup')
 const { hashPassword } = require('../../helpers/encryptPassword')
 const { comparePassword } = require('../../helpers/comparePassword')
@@ -75,7 +74,7 @@ router.get('/verify', async (req, res) => {
 router.post('/signin', validateSignupMiddleware, async (req, res) => {
   const { email, password } = req.body
   try {
-    const findUser = await userModel.findOne({
+    const findUser = await usersModel.findOne({
       email
     })
 

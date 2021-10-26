@@ -1,3 +1,4 @@
 const usersModel = require('./users')
+const checksModel = require('./checks')
 
-module.exports = { usersModel }
+module.exports = { usersModel, checksModel }
