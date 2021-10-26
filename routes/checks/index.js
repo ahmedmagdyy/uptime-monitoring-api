@@ -90,15 +90,16 @@ router.patch('/checks/:id', protectedRoute, async (req, res) => {
         .json({ message: "You're not the owner of this check!" })
     }
 
-    await checksModel.updateOne(
-      {
-        id
-      },
-      {
-        ...data
-      }
-    )
+    const keys = Object.keys(data)
 
+    for (let i = 0; i < keys.length; i++) {
+      checkById[keys[i]] = data[keys[i]]
+    }
+
+    await checkById.save()
+
+    await deleteCheckJob(checkById)
+    await addCheckJob(checkById)
     const resultCheck = await checksModel.findById(id)
 
     return res.status(200).json(resultCheck)
