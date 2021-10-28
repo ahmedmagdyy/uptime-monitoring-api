@@ -21,7 +21,6 @@ router.post(
         ...rest
       })
 
-      // TODO: create cron job to check URL
       const createJob = await addCheckJob(saveCheck)
       console.log({ createJob })
 
