@@ -42,14 +42,7 @@ async function formatAndSaveCheckReport ({
       })
       console.log({ createdReport })
     } else {
-      if (checkReport.status !== siteAvailabilityStatus) {
-        await notifyUserAboutAvailabilityChange({
-          userId: check.userId,
-          url: check.url,
-          siteAvailabilityStatus,
-          webhookUrl: check?.webhook
-        })
-      }
+      const oldUrlStatus = checkReport.status
 
       // calculate uptime & downtime
       checkReport.status = siteAvailabilityStatus
@@ -123,7 +116,19 @@ async function formatAndSaveCheckReport ({
           responseTimeAggregate[0].historyCount) *
         100
 
-      checkReport.save()
+      const updatedCheckData = await checkReport.save()
+      console.log({ updatedCheckData })
+
+      if (oldUrlStatus !== siteAvailabilityStatus) {
+        await notifyUserAboutAvailabilityChange({
+          url: check?.url,
+          userId: check?.userId,
+          webhookUrl: check?.webhookUrl,
+          outages: updatedCheckData?.outages,
+          threshold: check?.threshold,
+          siteAvailabilityStatus
+        })
+      }
     }
   } catch (error) {
     console.log(error)

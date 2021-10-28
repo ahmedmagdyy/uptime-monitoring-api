@@ -6,28 +6,31 @@ async function notifyUserAboutAvailabilityChange ({
   userId,
   siteAvailabilityStatus,
   url,
-  webhookUrl
+  webhookUrl,
+  outages,
+  threshold
 }) {
   try {
     const user = await usersModel.findById(userId)
-    // send email notification
-    const emailNotificationBody = `
-    Alert For: ${url}
-    Date: ${new Date().toLocaleString()}
 
-    Website is ${siteAvailabilityStatus}.
+    if (siteAvailabilityStatus === 'Up' || outages === threshold) {
+      // send email notification
+      const emailNotificationBody = `
+        Alert For: ${url}
+        Date: ${new Date().toLocaleString()}
 
-    Website is ${
-      siteAvailabilityStatus === 'Up'
-        ? 'up and accessible.'
-        : 'down and not accessible now. Back you website status to 200 HTTP status.'
+        Website is ${
+                siteAvailabilityStatus === 'Up'
+                  ? 'up and accessible.'
+                  : 'down and not accessible now. Back you website status to 200 HTTP status.'
+              }
+      `
+      await sendMail({
+        to: user.email,
+        body: emailNotificationBody,
+        emailSubject: 'Website Status Changed'
+      })
     }
-  `
-    await sendMail({
-      to: user.email,
-      body: emailNotificationBody,
-      emailSubject: 'Website Status Changed'
-    })
 
     // send notification to webhook
     if (webhookUrl) {
