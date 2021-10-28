@@ -75,15 +75,20 @@ async function formatAndSaveCheckReport ({
         {
           $group: {
             _id: '$checkId',
-            // responseTimeSum: { $sum: '$history.responseTime' },
-            historyCount: { $sum: 1 },
-            avgResTime: { $avg: '$history.responseTime' }
+            responseTimeSum: { $sum: '$history.responseTime' },
+            historyCount: { $sum: 1 }
+            // avgResTime: { $avg: '$history.responseTime' }
           }
         }
       ])
 
+      console.log(responseTimeAggregate)
+
       // update avg response time
-      checkReport.responseTime = responseTimeAggregate[0].avgResTime
+      const totalResponseTime =
+        responseTimeAggregate[0].responseTimeSum + resTimeInSeconds
+      checkReport.responseTime =
+        totalResponseTime / (responseTimeAggregate[0].historyCount + 1)
 
       // calculate site availability percentage
       const successPollingRequests = await reportsModel.aggregate([
@@ -110,6 +115,9 @@ async function formatAndSaveCheckReport ({
         }
       ])
 
+      // add 1 for the current req log which is not saved yet
+      successPollingRequests[0].total += siteAvailabilityStatus === 'Up' ? 1 : 0
+      responseTimeAggregate[0].historyCount += 1
       // update availability percentage
       checkReport.availability =
         (successPollingRequests[0].total /
