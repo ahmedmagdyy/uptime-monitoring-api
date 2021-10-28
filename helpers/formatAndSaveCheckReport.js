@@ -1,4 +1,5 @@
 const { reportsModel, checksModel } = require('../models')
+const { notifyUserAboutAvailabilityChange } = require('./availabilityNotify')
 
 async function formatAndSaveCheckReport ({
   checkId,
@@ -41,6 +42,15 @@ async function formatAndSaveCheckReport ({
       })
       console.log({ createdReport })
     } else {
+      if (checkReport.status !== siteAvailabilityStatus) {
+        await notifyUserAboutAvailabilityChange({
+          userId: check.userId,
+          url: check.url,
+          siteAvailabilityStatus,
+          webhookUrl: check?.webhook
+        })
+      }
+
       // calculate uptime & downtime
       checkReport.status = siteAvailabilityStatus
       checkReport.outages += siteAvailabilityStatus === 'Up' ? 0 : 1
