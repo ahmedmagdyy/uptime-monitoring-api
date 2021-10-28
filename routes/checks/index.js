@@ -1,6 +1,6 @@
 const router = require('express').Router()
 const validateCreateCheckInput = require('../../middlewares/createCheck')
-const { checksModel } = require('../../models')
+const { checksModel, reportsModel } = require('../../models')
 const protectedRoute = require('../../middlewares/protectedRoute')
 const { addCheckJob, deleteCheckJob } = require('../../queue/publisher.js')
 
@@ -64,6 +64,31 @@ router.get('/checks/:id', protectedRoute, async (req, res) => {
         .json({ message: "you're not the owner of this check!" })
     }
     return res.status(200).json(checkById)
+  } catch (error) {
+    console.log({ error })
+
+    return res.status(400).json('Failed Fetching Check!')
+  }
+})
+
+router.get('/checks/:id/reports', protectedRoute, async (req, res) => {
+  const user = req.user
+
+  const id = req.params.id
+  try {
+    const checkById = await checksModel.findById(id)
+    if (!checkById) {
+      return res.status(404).json({ message: 'Check not found!' })
+    }
+
+    if (checkById.userId !== user.sub) {
+      return res
+        .status(400)
+        .json({ message: "you're not the owner of this check!" })
+    }
+
+    const report = await reportsModel.find({ checkId: id })
+    return res.status(200).json(report)
   } catch (error) {
     console.log({ error })
 
