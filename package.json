@@ -9,6 +9,7 @@
   },
   "author": "Ahmed Magdy <ahmedmagdy2016@gmail.com>",
   "dependencies": {
+    "axios": "^0.24.0",
     "bcryptjs": "^2.4.3",
     "bullmq": "^1.50.5",
     "env-cmd": "^10.1.0",

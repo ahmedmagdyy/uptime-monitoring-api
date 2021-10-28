@@ -35,14 +35,20 @@ router.post('/signup', validateSignupMiddleware, async (req, res) => {
 
     await sendMail({
       to: email,
-      body: emailBody
+      body: emailBody,
+      emailSubject: 'Email Verification'
     })
 
-    return res.status(200).json(saveUser)
+    const accessToken = createAccessToken({
+      email: saveUser.email,
+      id: saveUser._id
+    })
+
+    return res.status(200).json({ accessToken })
   } catch (error) {
     console.log({ error })
     if (error.toString().includes('E11000 duplicate key error collection')) {
-      res.status(400).json({ message: 'Email Already Used!' })
+      return res.status(400).json({ message: 'Email Already Used!' })
     }
     return res.status(400).json('Signup Failed!')
   }

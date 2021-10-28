@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer')
 
-async function sendMail ({ to, body }) {
+async function sendMail ({ to, body, emailSubject }) {
   const transporter = nodemailer.createTransport(
     {
       host: process.env.MAIL_HOST,
@@ -19,7 +19,7 @@ async function sendMail ({ to, body }) {
 
   const data = {
     to,
-    subject: 'Email Verification',
+    subject: emailSubject,
     text: body
   }
 
