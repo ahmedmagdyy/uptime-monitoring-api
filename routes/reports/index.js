@@ -28,18 +28,12 @@ const { reportsModel, checksModel } = require('../../models')
 
 router.get('/reports', protectedRoute, async (req, res) => {
   const user = req.user
-  const tags = req?.query?.token
+  const tag = req?.query?.tag
   try {
-    const args = {
-      userId: user.sub
-    }
-    if (tags?.length) {
-      args.tags = {
-        $in: tags
-      }
-    }
-
-    const checks = await checksModel.find(args)
+    const checks = await checksModel.find({
+      userId: user.sub,
+      tags: tag
+    })
     const checkIds = checks.map(check => check._id)
 
     const allReports = await reportsModel.find({
