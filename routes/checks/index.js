@@ -4,6 +4,85 @@ const { checksModel, reportsModel } = require('../../models')
 const protectedRoute = require('../../middlewares/protectedRoute')
 const { addCheckJob, deleteCheckJob } = require('../../queue/publisher.js')
 
+/**
+ * @swagger
+ * /checks:
+ *   post:
+ *     description: create new check
+ *     tags: [Check]
+ *     security:
+ *      - BearerAuth: []
+ *     produces:
+ *       - application/json
+ *     requestBody:
+ *        description: Check information
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              required:
+ *                - url
+ *                - name
+ *                - protocol
+ *              properties:
+ *                name:
+ *                  type: string
+ *                url:
+ *                  type: string
+ *                protocol:
+ *                  type: string
+ *                  enum: [HTTP, HTTPS, TCP]
+ *                status:
+ *                  type: string
+ *                  enum: [Paused, Running]
+ *                  default: Running
+ *                path:
+ *                  type: string
+ *                port:
+ *                  type: number
+ *                webhook:
+ *                  type: string
+ *                timeout:
+ *                  type: number
+ *                interval:
+ *                  type: number
+ *                threshold:
+ *                  type: number
+ *                authentication:
+ *                  type: object
+ *                  properties:
+ *                    username:
+ *                      type: string
+ *                    password:
+ *                      type: string
+ *                httpHeaders:
+ *                  type: array
+ *                  items:
+ *                    type: object
+ *                    properties:
+ *                      key:
+ *                        type: string
+ *                      value:
+ *                        type: string
+ *                assert:
+ *                  type: object
+ *                  properties:
+ *                    statusCode:
+ *                      type: number
+ *                tags:
+ *                  type: array
+ *                  items:
+ *                    type: string
+ *                ignoreSSL:
+ *                  type: boolean
+ *     responses:
+ *       200:
+ *         description: Returns a check object.
+ *       400:
+ *         description: create check failed.
+ *       401:
+ *         description: unauthenticated.
+ */
 router.post(
   '/checks',
   [validateCreateCheckInput, protectedRoute],
@@ -33,6 +112,22 @@ router.post(
   }
 )
 
+/**
+ * @swagger
+ * /checks:
+ *   get:
+ *    description: return all checks
+ *    tags: [Check]
+ *    security:
+ *     - BearerAuth: []
+ *    produces:
+ *      - application/json
+ *    responses:
+ *      200:
+ *        description: Returns array of check objects.
+ *      400:
+ *        description: Failed to get checks.
+ */
 router.get('/checks', protectedRoute, async (req, res) => {
   const user = req.user
   try {
@@ -48,9 +143,34 @@ router.get('/checks', protectedRoute, async (req, res) => {
   }
 })
 
+/**
+ * @swagger
+ * /checks/:id:
+ *   get:
+ *    description: return all checks
+ *    tags: [Check]
+ *    security:
+ *     - BearerAuth: []
+ *    produces:
+ *      - application/json
+ *    parameters:
+ *      - in: query
+ *        name: id
+ *        type: string
+ *        required: true
+ *        description: id of check
+ *    responses:
+ *      200:
+ *        description: Returns check objects.
+ *      400:
+ *        description: Failed to get check.
+ *      404:
+ *        description: check not found.
+ *      403:
+ *        description: unauthorized.
+ */
 router.get('/checks/:id', protectedRoute, async (req, res) => {
   const user = req.user
-
   const id = req.params.id
   try {
     const checkById = await checksModel.findById(id)
@@ -60,7 +180,7 @@ router.get('/checks/:id', protectedRoute, async (req, res) => {
 
     if (checkById.userId !== user.sub) {
       return res
-        .status(400)
+        .status(403)
         .json({ message: "you're not the owner of this check!" })
     }
     return res.status(200).json(checkById)
@@ -71,6 +191,32 @@ router.get('/checks/:id', protectedRoute, async (req, res) => {
   }
 })
 
+/**
+ * @swagger
+ * /checks/:id/reports:
+ *   get:
+ *    description: return check's report
+ *    tags: [Check]
+ *    security:
+ *     - BearerAuth: []
+ *    produces:
+ *      - application/json
+ *    parameters:
+ *      - in: query
+ *        name: id
+ *        type: string
+ *        required: true
+ *        description: id of check
+ *    responses:
+ *      200:
+ *        description: Returns report objects.
+ *      400:
+ *        description: Failed to get report.
+ *      404:
+ *        description: check not found.
+ *      403:
+ *        description: unauthorized.
+ */
 router.get('/checks/:id/reports', protectedRoute, async (req, res) => {
   const user = req.user
 
@@ -83,7 +229,7 @@ router.get('/checks/:id/reports', protectedRoute, async (req, res) => {
 
     if (checkById.userId !== user.sub) {
       return res
-        .status(400)
+        .status(403)
         .json({ message: "you're not the owner of this check!" })
     }
 
@@ -96,6 +242,91 @@ router.get('/checks/:id/reports', protectedRoute, async (req, res) => {
   }
 })
 
+/**
+ * @swagger
+ * /checks/:id:
+ *  patch:
+ *    description: update check information
+ *    tags: [Check]
+ *    security:
+ *     - BearerAuth: []
+ *    produces:
+ *      - application/json
+ *    parameters:
+ *      - in: query
+ *        name: id
+ *        type: string
+ *        required: true
+ *        description: id of check
+ *    requestBody:
+ *       description: Check information
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 required: true
+ *               url:
+ *                 type: string
+ *                 required: true
+ *               protocol:
+ *                 type: string
+ *                 enum: [HTTP, HTTPS, TCP]
+ *                 required: true
+ *               status:
+ *                 type: string
+ *                 enum: [Paused, Running]
+ *               path:
+ *                 type: string
+ *               port:
+ *                 type: number
+ *               webhook:
+ *                 type: string
+ *               timeout:
+ *                 type: number
+ *               interval:
+ *                 type: number
+ *               threshold:
+ *                 type: number
+ *               authentication:
+ *                 type: object
+ *                 properties:
+ *                   username:
+ *                     type: string
+ *                   password:
+ *                     type: string
+ *               httpHeaders:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     key:
+ *                       type: string
+ *                     value:
+ *                       type: string
+ *               assert:
+ *                 type: object
+ *                 properties:
+ *                   statusCode:
+ *                     type: number
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               ignoreSSL:
+ *                 type: boolean
+ *    responses:
+ *      200:
+ *        description: Returns a check object after update.
+ *      400:
+ *        description: update check failed.
+ *      401:
+ *        description: unauthenticated.
+ *      403:
+ *        description: unauthorized.
+ */
 router.patch('/checks/:id', protectedRoute, async (req, res) => {
   const user = req.user
   const id = req.params.id
@@ -110,7 +341,7 @@ router.patch('/checks/:id', protectedRoute, async (req, res) => {
 
     if (checkById.userId !== user.sub) {
       return res
-        .status(400)
+        .status(403)
         .json({ message: "You're not the owner of this check!" })
     }
 
@@ -137,6 +368,32 @@ router.patch('/checks/:id', protectedRoute, async (req, res) => {
   }
 })
 
+/**
+ * @swagger
+ * /checks/:id:
+ *   delete:
+ *    description: delete check
+ *    tags: [Check]
+ *    security:
+ *     - BearerAuth: []
+ *    produces:
+ *      - application/json
+ *    parameters:
+ *      - in: query
+ *        name: id
+ *        type: string
+ *        required: true
+ *        description: id of check
+ *    responses:
+ *      204:
+ *        description: check deleted successfully.
+ *      400:
+ *        description: Failed to delete check.
+ *      404:
+ *        description: check not found.
+ *      403:
+ *        description: unauthorized.
+ */
 router.delete('/checks/:id', protectedRoute, async (req, res) => {
   const user = req.user
   const id = req.params.id
@@ -148,7 +405,7 @@ router.delete('/checks/:id', protectedRoute, async (req, res) => {
 
     if (checkExists.userId !== user.sub) {
       return res
-        .status(400)
+        .status(403)
         .json({ message: "You're not the owner of this check!" })
     }
 

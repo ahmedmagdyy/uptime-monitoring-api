@@ -2,9 +2,33 @@ const router = require('express').Router()
 const protectedRoute = require('../../middlewares/protectedRoute')
 const { reportsModel, checksModel } = require('../../models')
 
+/**
+ * @swagger
+ * /reports:
+ *   get:
+ *     description: get reports by or without check tag
+ *     security:
+ *      - BearerAuth: []
+ *     tags: [Reports]
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - in: query
+ *         name: tag
+ *         description: tag of check.
+ *         type: string
+ *     responses:
+ *        200:
+ *         description: Returns an access token.
+ *        400:
+ *         description: Can't get report.
+ *        401:
+ *          description: Unauthorized.
+ */
+
 router.get('/reports', protectedRoute, async (req, res) => {
   const user = req.user
-  const tags = req.body.tags
+  const tags = req?.query?.token
   try {
     const args = {
       userId: user.sub
