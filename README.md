@@ -1,5 +1,5 @@
 # Uptime Monitoring Api
-## _Monitor the availability of wesites based on specified interval._
+## _Monitor the availability of websites based on specified interval._
 
 Api built with nodejs, mongodb, bullMQ and redis.
 
