@@ -8,9 +8,9 @@ async function sendMail ({ to, body, emailSubject }) {
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS
-      },
-      logger: true,
-      transactionLog: true
+      }
+      // logger: true,
+      // transactionLog: true
     },
     {
       from: 'Url Monitoring Platform <example@nodemailer.com>'
