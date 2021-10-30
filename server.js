@@ -30,6 +30,10 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs))
 
 app.use(express.json())
+app.get('/', (req, res) => {
+  res.status(200).send('Ok!')
+})
+
 app.get('/healthz', (req, res) => {
   res.status(200).send('Ok!')
 })
