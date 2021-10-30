@@ -14,7 +14,6 @@ async function notifyUserAboutAvailabilityChange ({
     const user = await usersModel.findById(userId)
 
     if (siteAvailabilityStatus === 'Up' || outages === threshold) {
-      // send email notification
       const emailNotificationBody = `
         Alert For: ${url}
         Date: ${new Date().toLocaleString()}
@@ -32,7 +31,6 @@ async function notifyUserAboutAvailabilityChange ({
       })
     }
 
-    // send notification to webhook
     if (webhookUrl) {
       await axios.post(webhookUrl, {
         data: {

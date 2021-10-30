@@ -5,38 +5,54 @@ const { generateAxiosConfig } = require('../helpers/generateAxiosConfig')
 const {
   formatAndSaveCheckReport
 } = require('../helpers/formatAndSaveCheckReport')
-const { reportsModel } = require('../models')
+const { reportsModel, checksModel } = require('../models')
 
-const uptimeQueueScheduler = new QueueScheduler('uptime')
-const uptimeQueue = new Queue('uptime', 'redis://localhost:6379')
+const queueName = process.env.NODE_ENV === 'Testing' ? 'test' : 'uptime'
+const connection = {
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT
+}
 
-const worker = new Worker('uptime', async job => {
-  console.log('Received job:')
-  console.dir({ job: job.data }, { depth: null })
-  const jobData = job.data
-
-  // build request config
-  const config = generateAxiosConfig(jobData)
-
-  // attach requestStartTime to help calculate
-  // response time
-  config.requestStartTime = Date.now()
-
-  // send GET req to url
-  const checkUrl = await axios.get(jobData?.url, config)
-
-  // get response time of req
-  const resStatusCode = checkUrl.status
-  const resTimeInSeconds =
-    (Date.now() - checkUrl.config.requestStartTime) / 1000
-
-  // generate & save check report
-  await formatAndSaveCheckReport({
-    checkId: jobData._id,
-    resStatusCode,
-    resTimeInSeconds
-  })
+const uptimeQueueScheduler = new QueueScheduler(queueName, {
+  connection
 })
+
+const uptimeQueue = new Queue(queueName, {
+  connection
+})
+
+const worker = new Worker(
+  queueName,
+  async job => {
+    console.log('Received job:')
+    console.dir({ job: job.data }, { depth: null })
+    const jobData = job.data
+
+    const check = await checksModel.findById(jobData._id)
+    if (!check) {
+      return deleteCheckJob(jobData)
+    }
+
+    const config = generateAxiosConfig(jobData)
+
+    config.requestStartTime = Date.now()
+
+    const checkUrl = await axios.get(jobData?.url, config)
+
+    const resStatusCode = checkUrl.status
+    const resTimeInSeconds =
+      (Date.now() - checkUrl.config.requestStartTime) / 1000
+
+    await formatAndSaveCheckReport({
+      check,
+      resStatusCode,
+      resTimeInSeconds
+    })
+  },
+  {
+    connection
+  }
+)
 
 const addCheckJob = async data => {
   try {
@@ -48,7 +64,6 @@ const addCheckJob = async data => {
       },
       jobId: uniqueIdentifier
     })
-    // console.log('done publishing job', await uptimeQueue.getRepeatableJobs())
     return true
   } catch (error) {
     console.log(error)

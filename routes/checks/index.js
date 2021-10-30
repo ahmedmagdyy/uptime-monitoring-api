@@ -100,8 +100,8 @@ router.post(
         ...rest
       })
 
-      const createJob = await addCheckJob(saveCheck)
-      console.log({ createJob })
+      await addCheckJob(saveCheck)
+      // console.log({ createJob })
 
       return res.status(200).json(saveCheck)
     } catch (error) {
@@ -181,7 +181,7 @@ router.get('/checks/:id', protectedRoute, async (req, res) => {
     if (checkById.userId !== user.sub) {
       return res
         .status(403)
-        .json({ message: "you're not the owner of this check!" })
+        .json({ message: "You're not the owner of this check!" })
     }
     return res.status(200).json(checkById)
   } catch (error) {

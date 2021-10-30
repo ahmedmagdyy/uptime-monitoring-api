@@ -41,7 +41,6 @@ router.post('/signup', validateSignupMiddleware, async (req, res) => {
   const { email, password } = req.body
   try {
     const hasahedPassword = await hashPassword(password)
-
     const saveUser = await usersModel.create({
       email,
       password: hasahedPassword
@@ -59,7 +58,8 @@ router.post('/signup', validateSignupMiddleware, async (req, res) => {
       { expiresIn: '12h' }
     )
 
-    const link = `${process.env.APP_URL}/verify?token=${token}`
+    const link = `http://localhost:${process.env.PORT ||
+      7000}/verify?token=${token}`
     const emailBody = `Thanks for register to our service, to verify your email please follow the following link: ${link}`
 
     await sendMail({
@@ -75,8 +75,8 @@ router.post('/signup', validateSignupMiddleware, async (req, res) => {
 
     return res.status(200).json({ accessToken })
   } catch (error) {
-    console.log({ error })
-    if (error.toString().includes('E11000 duplicate key error collection')) {
+    console.log(error.toString())
+    if (error.toString().includes('E11000 duplicate key')) {
       return res.status(400).json({ message: 'Email Already Used!' })
     }
     return res.status(400).json('Signup Failed!')
