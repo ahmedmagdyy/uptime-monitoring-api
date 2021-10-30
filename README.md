@@ -21,14 +21,12 @@ To run the api make sure you have [Docker](https://docs.docker.com/get-docker/) 
 Clone the repo.
 ```
 git clone https://github.com/ahmedmagdyy/uptime-monitoring-api.git
+cd uptime-monitoring-api
 ```
-
 Create your own .env file based on .env.example file.
 
 run:
-
 ```sh
-cd uptime-monitoring-api
 docker-compose up -d
 ```
 
