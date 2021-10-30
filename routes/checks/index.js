@@ -105,8 +105,7 @@ router.post(
 
       return res.status(200).json(saveCheck)
     } catch (error) {
-      console.log({ error })
-
+      console.log(error.toString())
       return res.status(400).json('Create Check Failed!')
     }
   }
