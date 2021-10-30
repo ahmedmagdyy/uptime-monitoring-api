@@ -1,29 +1,21 @@
-const { reportsModel, checksModel } = require('../models')
+const { reportsModel } = require('../models')
 const { notifyUserAboutAvailabilityChange } = require('./availabilityNotify')
 
 async function formatAndSaveCheckReport ({
-  checkId,
+  check,
   resTimeInSeconds,
   resStatusCode
 }) {
   try {
-    const check = await checksModel.findById(checkId)
+    const checkId = check?._id.toString()
     const checkReport = await reportsModel.findOne({ checkId })
 
     const reportHistory = checkReport?.history || []
     const siteAvailabilityStatus =
-      resStatusCode === (check.assert.statusCode || 200) ? 'Up' : 'Down'
-
-    // console.log({
-    //   checkReport,
-    //   reportHistory,
-    //   resTimeInSeconds,
-    //   resStatusCode,
-    //   siteAvailabilityStatus
-    // })
+      resStatusCode === (check?.assert?.statusCode || 200) ? 'Up' : 'Down'
 
     if (!checkReport) {
-      const createdReport = await reportsModel.create({
+      await reportsModel.create({
         status: siteAvailabilityStatus, // up or down
         availability: siteAvailabilityStatus === 'Up' ? 100 : 0,
         responseTime: resTimeInSeconds,
@@ -40,21 +32,18 @@ async function formatAndSaveCheckReport ({
           }
         ]
       })
-      console.log({ createdReport })
     } else {
       const oldUrlStatus = checkReport.status
 
-      // calculate uptime & downtime
       checkReport.status = siteAvailabilityStatus
       checkReport.outages += siteAvailabilityStatus === 'Up' ? 0 : 1
 
       checkReport.downtime +=
-        siteAvailabilityStatus === 'Up' ? 0 : check.interval * 60
+        siteAvailabilityStatus === 'Up' ? 0 : check?.interval * 60
 
       checkReport.uptime +=
-        siteAvailabilityStatus === 'Up' ? check.interval * 60 : 0
+        siteAvailabilityStatus === 'Up' ? check?.interval * 60 : 0
 
-      // save log in history
       checkReport.history = [
         ...reportHistory,
         {
@@ -65,67 +54,22 @@ async function formatAndSaveCheckReport ({
         }
       ]
 
-      // get avg response time
-      // TO Improve: get avg of specific period of time hours, day, week, month
-      const responseTimeAggregate = await reportsModel.aggregate([
-        { $match: { checkId } },
-        {
-          $unwind: '$history'
-        },
-        {
-          $group: {
-            _id: '$checkId',
-            responseTimeSum: { $sum: '$history.responseTime' },
-            historyCount: { $sum: 1 }
-            // avgResTime: { $avg: '$history.responseTime' }
-          }
-        }
-      ])
+      const {
+        historyCount,
+        newAvgResponseTime
+      } = await calculateAvgResponseTime({
+        checkId,
+        requestResponseTime: resTimeInSeconds
+      })
+      checkReport.responseTime = newAvgResponseTime
 
-      console.log(responseTimeAggregate)
-
-      // update avg response time
-      const totalResponseTime =
-        responseTimeAggregate[0].responseTimeSum + resTimeInSeconds
-      checkReport.responseTime =
-        totalResponseTime / (responseTimeAggregate[0].historyCount + 1)
-
-      // calculate site availability percentage
-      const successPollingRequests = await reportsModel.aggregate([
-        {
-          $match: {
-            checkId
-          }
-        },
-        {
-          $unwind: '$history'
-        },
-        {
-          $match: {
-            'history.websiteStatus': 'Up'
-          }
-        },
-        {
-          $group: {
-            _id: '$checkId',
-            total: {
-              $sum: 1
-            }
-          }
-        }
-      ])
-
-      // add 1 for the current req log which is not saved yet
-      successPollingRequests[0].total += siteAvailabilityStatus === 'Up' ? 1 : 0
-      responseTimeAggregate[0].historyCount += 1
-      // update availability percentage
-      checkReport.availability =
-        (successPollingRequests[0].total /
-          responseTimeAggregate[0].historyCount) *
-        100
+      checkReport.availability = await calculateSiteAvailabilityPercentage({
+        checkId,
+        historyCount,
+        siteAvailabilityStatus
+      })
 
       const updatedCheckData = await checkReport.save()
-      console.log({ updatedCheckData })
 
       if (oldUrlStatus !== siteAvailabilityStatus) {
         await notifyUserAboutAvailabilityChange({
@@ -141,6 +85,70 @@ async function formatAndSaveCheckReport ({
   } catch (error) {
     console.log(error)
   }
+}
+
+async function calculateAvgResponseTime ({ checkId, requestResponseTime }) {
+  const responseTimeAggregate = await reportsModel.aggregate([
+    { $match: { checkId } },
+    {
+      $unwind: '$history'
+    },
+    {
+      $group: {
+        _id: '$checkId',
+        responseTimeSum: { $sum: '$history.responseTime' },
+        historyCount: { $sum: 1 }
+      }
+    }
+  ])
+  const totalResponseTime =
+    responseTimeAggregate?.[0].responseTimeSum + requestResponseTime
+
+  // add 1 for the current request which is not saved
+  const newHistoryCount = responseTimeAggregate?.[0]?.historyCount + 1
+  const newAvgResponseTime = totalResponseTime / newHistoryCount
+
+  return {
+    newAvgResponseTime,
+    historyCount: newHistoryCount
+  }
+}
+
+async function calculateSiteAvailabilityPercentage ({
+  checkId,
+  siteAvailabilityStatus,
+  historyCount
+}) {
+  const successPollingRequests = await reportsModel.aggregate([
+    {
+      $match: {
+        checkId
+      }
+    },
+    {
+      $unwind: '$history'
+    },
+    {
+      $match: {
+        'history.websiteStatus': 'Up'
+      }
+    },
+    {
+      $group: {
+        _id: '$checkId',
+        total: {
+          $sum: 1
+        }
+      }
+    }
+  ])
+
+  successPollingRequests[0].total += siteAvailabilityStatus === 'Up' ? 1 : 0
+
+  const newAvailabilityPercentage =
+    (successPollingRequests[0].total / historyCount) * 100
+
+  return newAvailabilityPercentage
 }
 
 module.exports = { formatAndSaveCheckReport }
